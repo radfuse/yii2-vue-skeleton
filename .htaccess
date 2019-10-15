@@ -1,0 +1,18 @@
+<IfModule mod_rewrite.c>
+    Options +FollowSymlinks
+	Options -Indexes
+    RewriteEngine On
+</IfModule>
+
+<IfModule mod_rewrite.c>
+    RewriteCond %{REQUEST_URI} ^/api/$
+    RewriteRule ^(api)/$ /$1 [R=301,L]
+    RewriteCond %{REQUEST_URI} ^/api
+    RewriteRule ^api(/.+)?$ /web/index.php$1 [L,PT]
+
+    RewriteCond %{REQUEST_URI} !^/frontend/
+    RewriteRule ^(.*)$ frontend/$1 [L]
+</IfModule>
+
+php_value post_max_size 10M
+php_value upload_max_filesize 10M
