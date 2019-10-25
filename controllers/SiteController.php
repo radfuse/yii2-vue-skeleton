@@ -6,6 +6,9 @@ use Yii;
 use app\components\RestController;
 use app\models\LoginForm;
 use app\models\RegisterForm;
+use app\models\User;
+use yii\web\UnauthorizedHttpException;
+use yii\web\BadRequestHttpException;
 
 /**
  * Site controller
@@ -13,7 +16,7 @@ use app\models\RegisterForm;
 class SiteController extends RestController
 {
 	/** @var array */
-	protected $_noAuthActions = ['login', 'register'];
+	protected $authOptional = ['login', 'register', 'refresh-token'];
 
 	/**
 	 * Action for logging in
@@ -29,7 +32,8 @@ class SiteController extends RestController
 			return [
 				'status' => 200,
 				'success' => true,
-				'access_token' => $user->getAuthKey(),
+				'access_token' => $user->access_token,
+				'refresh_token' => $user->refresh_token,
 				'user' => [
 					'username' => $user->username
 				],
@@ -45,7 +49,8 @@ class SiteController extends RestController
      * Action for registering
      * @return array
      */
-	public function actionRegister(){
+	public function actionRegister()
+	{
         $model = new RegisterForm();
         
 		if ($model->load(Yii::$app->getRequest()->getBodyParams(), '') && $model->signup())
@@ -54,6 +59,41 @@ class SiteController extends RestController
 			$model->validate();
 			return $model;
 		}
+    }
+    
+    /**
+     * Action for refreshing access token
+	 * @throws BadRequestHttpException
+	 * @throws UnauthorizedHttpException
+     * @return array
+     */
+	public function actionRefreshToken()
+	{
+		$refreshToken = Yii::$app->getRequest()->getBodyParams('refresh_token');
+		$accessToken = Yii::$app->getRequest()->getBodyParams('access_token');
+
+		if (!$refreshToken || !$accessToken)
+			throw new BadRequestHttpException('Missing `refresh_token` or `access_token` parameters.');
+		
+		if (!($user = User::findIdentityByRefreshToken($refreshToken)))
+			throw new UnauthorizedHttpException('No user found for refresh token.');
+
+		if (!$user->isTokenValid('refresh_token'))
+			throw new UnauthorizedHttpException('Refresh token expired.');
+
+		$user->generateTokens();
+		if ($user->save(false, ['access_token', 'refresh_token']))
+			return [
+				'status' => 200,
+				'success' => true,
+				'access_token' => $user->access_token,
+				'refresh_token' => $user->refresh_token,
+			];
+		else
+			return [
+				'status' => 200,
+				'success' => false,
+			];
     }
 
 	/**

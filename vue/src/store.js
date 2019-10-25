@@ -15,9 +15,9 @@ export default new Vuex.Store({
     registerErrors: {},
 	},
 	mutations: {
-    login_success(state, { token, user }){
+    login_success(state, { access_token, user }){
       state.loginErrors = {};
-      state.token = token;
+      state.token = access_token;
       state.user = user;
     },
     login_error(state, errors){
@@ -34,24 +34,31 @@ export default new Vuex.Store({
       state.user = {};
       state.token = '';
     },
+    refresh_success(state, { access_token }){
+      state.token = access_token;
+    }
 	},
 	actions: {
 		login({commit}, user){
 			return new Promise((resolve, reject) => {
         ApiService.post('site/login', user)
           .then(res => {
-            const token = res.data.access_token
-            const user = res.data.user
+            const access_token = res.data.access_token;
+            const refresh_token = res.data.refresh_token;
+            const user = res.data.user;
 
-            TokenService.setToken(token);
+            TokenService.setToken(access_token);
+            TokenService.setRefreshToken(refresh_token);
             UserService.setUser(user);
             ApiService.setHeader();
+            ApiService.mountTokenRefresh();
 
-            commit('login_success', { token, user });
+            commit('login_success', { access_token, user });
             resolve(res);
           })
           .catch(err => {
             TokenService.removeToken();
+            TokenService.removeRefreshToken();
             UserService.removeUser();
             ApiService.removeHeader();
 
@@ -93,13 +100,36 @@ export default new Vuex.Store({
     logout({commit}){
       return new Promise((resolve) => {
         TokenService.removeToken();
+        TokenService.removeRefreshToken();
         UserService.removeUser();
         ApiService.removeHeader();
+        ApiService.unmountTokenRefresh();
 
         commit('logout');
         resolve();
       })
-    }
+    },
+		refreshToken({commit}){
+			return new Promise((resolve, reject) => {
+
+        ApiService.post('site/refresh-token', {access_token: TokenService.getToken(), refresh_token: TokenService.getRefreshToken()})
+          .then(res => {
+            const access_token = res.data.access_token;
+            const refresh_token = res.data.refresh_token;
+
+            TokenService.setToken(access_token);
+            TokenService.setRefreshToken(refresh_token);
+            ApiService.setHeader();
+
+            commit('refresh_success', { access_token });
+            resolve(res);
+          })
+          .catch(err => {
+            console.log(err);
+            reject(err);
+          });
+			});
+    },
 	},
 	getters : {
     isLoggedIn: state => !!state.token,

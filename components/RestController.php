@@ -14,8 +14,8 @@ class RestController extends Controller
 {
 	/** @inheritdoc */
 	public $enableCsrfValidation = false;
-	/** @var array Action IDs that does not require authentication */
-	protected $_noAuthActions = [];
+	/** @var array Action IDs where authentication is optional */
+	protected $authOptional = [];
 	
 	/**
      * {@inheritdoc}
@@ -45,7 +45,8 @@ class RestController extends Controller
 
         $behaviors['authenticator'] = [
 			'class' => HttpBearerAuth::className(),
-			'except' => array_merge(['options'], $this->_noAuthActions)
+			'optional' => $this->authOptional,
+			'except' => ['options']
 		];
 		
 		return $behaviors;

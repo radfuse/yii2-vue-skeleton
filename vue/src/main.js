@@ -12,8 +12,10 @@ Vue.config.productionTip = false;
 
 ApiService.init(process.env.VUE_APP_API_URL);
 
-if(TokenService.getToken())
+if(TokenService.getToken()){
   ApiService.setHeader();
+  ApiService.mountTokenRefresh();
+}
 
 new Vue({
   router,

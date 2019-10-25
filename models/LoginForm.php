@@ -57,7 +57,8 @@ class LoginForm extends Model
         if ($this->validate()) {
             $user = $this->getUser();
             $user->last_login_at = time();
-            $user->save(false, ['last_login_at']);
+            $user->generateTokens();
+            $user->save(false, ['last_login_at', 'access_token', 'refresh_token']);
             
             return Yii::$app->user->login($user, 3600*24*30);
         }
