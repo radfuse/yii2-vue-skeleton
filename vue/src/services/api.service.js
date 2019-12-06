@@ -45,7 +45,7 @@ const ApiService = {
                             });
                     }
                     else {
-                        store.dispatch('refreshToken')
+                        return store.dispatch('refreshToken')
                             .then(() => {
                                 return axios({
                                     method: originalRequest.method,
