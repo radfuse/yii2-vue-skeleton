@@ -15,6 +15,7 @@ ApiService.init(process.env.VUE_APP_API_URL);
 if(TokenService.getToken()){
   ApiService.setHeader();
   ApiService.mountTokenRefresh();
+  ApiService.checkTokenValidity();
 }
 
 new Vue({

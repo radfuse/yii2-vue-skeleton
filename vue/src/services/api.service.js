@@ -27,6 +27,16 @@ const ApiService = {
     delete(resource) {
         return axios.delete(resource);
     },
+    checkTokenValidity(){
+        if(TokenService.getToken()){
+            let accessToken = TokenService.getToken();
+            let accessTokenParts = accessToken.split('_');
+            let expiration = accessTokenParts.pop();
+
+            if(expiration < Date.now() / 1000)
+                store.dispatch('refreshToken').catch(() => {});
+        }
+    },
     mountTokenRefresh() {
         this._tokenRefreshInterceptor = axios.interceptors.response.use(
             (response) => {
